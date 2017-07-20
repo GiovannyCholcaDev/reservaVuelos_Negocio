@@ -18,8 +18,25 @@ import modelo.vistas.ItinerarioTransient;
 public class ItinerarioDAO extends DaoJpaImpl<Itinerario, Integer> {
 
 	@SuppressWarnings("unchecked")
-	public List<ItinerarioTransient> obtenerItinerarios() {
-		List<ItinerarioTransient> itinerariosCol = new ArrayList<>();
+	public List<ItinerarioTransient> obtenerItinerarios(Integer idAeropuestoOrigen, Integer idAeropuestoDestino, Date fechaIda, Integer idCabina) {
+		StringBuffer builder = this.buildProyectionSql();
+		builder.append(" WHERE ");
+			builder.append(" ARO.ID_AEROPUERTO  = :pIdOrigen AND ");
+			builder.append(" ARD.ID_AEROPUERTO  = :pIdDestino AND ");
+			builder.append(" DI.FECHA >= :pFechaIda AND ");
+			builder.append(" CC.ID_CLASIFICACION_CABINA = :pIdCabina ");
+			builder.append(" ORDER BY DI.FECHA, HI.HORA ");
+		Query query = this.createNativeQuery(builder.toString());
+			query.setParameter("pIdOrigen", idAeropuestoOrigen);
+			query.setParameter("pIdDestino", idAeropuestoDestino);
+		    query.setParameter("pFechaIda", fechaIda);
+		    query.setParameter("pIdCabina", idCabina);
+		List<Object[]> results = (List<Object[]> ) query.getResultList();
+		List<ItinerarioTransient> itinerariosCol = this.convertDTO(results);
+		return itinerariosCol;
+	}
+	
+	private StringBuffer buildProyectionSql(){
 		StringBuffer builder = new StringBuffer();
 		builder.append(" SELECT IT.ID_ITINERARIO as idItinerario ");
 		builder.append(" ,RT.ID_RUTA as idRuta, RT.ABORDAJE ");
@@ -28,7 +45,7 @@ public class ItinerarioDAO extends DaoJpaImpl<Itinerario, Integer> {
 		builder.append(" ,DI.FECHA as fechaOrigen, HI.HORA as horaOrigen ");
 		builder.append(" ,DL.FECHA as fechaDestino, HL.HORA as horaDestino ");	
 		builder.append(" ,IT.DURACION ");
-		builder.append(" ,CC.TIPO_CLASE as tipoClase ");
+		builder.append(" ,CC.TIPO_CLASE as tipoClase, CC.ID_CLASIFICACION_CABINA as idCabina ");
 		builder.append(" ,AV.AEROLINEA, AV.NUMASIENTOS, AV.NUMASIENTOSPRIMERACLASE, AV.NUMASIENTOSECONOMICA, AV.ESTADO_AVION as estadoAvion, AV.TIPO_AVION as tipoAvion ");
 		builder.append(" ,VU.ID_VUELO as idVuelo, VU.ESTADO_VUELO AS numeroVuelo ");
 		builder.append(" ,TA.VALOR_TARIFA as valorTarifa, (TA.IMPUESTO_TARIFA + TA.TASA_TARIFA) AS impuestoTasa, (TA.VALOR_TARIFA + (TA.IMPUESTO_TARIFA + TA.TASA_TARIFA)) as totalPagarTarifa ");
@@ -46,11 +63,11 @@ public class ItinerarioDAO extends DaoJpaImpl<Itinerario, Integer> {
 		builder.append(" INNER JOIN AVION AV ON IT.ID_AVION = AV.ID_AVION ");
 		builder.append(" LEFT JOIN VUELO VU ON IT.ID_ITINERARIO = VU.ID_ITINERARIO ");
 		builder.append(" INNER JOIN TARIFA TA ON VU.ID_TARIFA = TA.ID_TARIFA ");
-		builder.append(" ORDER BY DI.FECHA ");
-		
-		Query query = this.createNativeQuery(builder.toString());
-		List<Object[]> results = (List<Object[]> ) query.getResultList();
-		results.size();
+		return builder;
+	}
+	
+	private List<ItinerarioTransient> convertDTO(List<Object[]> results){
+		List<ItinerarioTransient> itinerariosCol = new ArrayList<>();
 		for (Object[] objects : results) {
 			ItinerarioTransient itinerarioTr = new ItinerarioTransient();
 			itinerarioTr.setIdItinerario((Integer) objects[0]);
@@ -75,20 +92,21 @@ public class ItinerarioDAO extends DaoJpaImpl<Itinerario, Integer> {
 			
 			itinerarioTr.setDuracion((Time) objects[17]);
 			itinerarioTr.setTipoClase((String) objects[18]);
-			itinerarioTr.setAerolinea((String) objects[19]);
+			itinerarioTr.setIdCabina((Integer) objects[19]);
+			itinerarioTr.setAerolinea((String) objects[20]);
 			
-			itinerarioTr.setNumAsientos((Integer) objects[20]);
-			itinerarioTr.setNumAsientosPrimeraClase((Integer) objects[21]);
-			itinerarioTr.setNumAsientosEconomica((Integer) objects[22]);
-			itinerarioTr.setEstadoAvion((String) objects[23]);
-			itinerarioTr.setTipoAvion((String) objects[24]);
+			itinerarioTr.setNumAsientos((Integer) objects[21]);
+			itinerarioTr.setNumAsientosPrimeraClase((Integer) objects[22]);
+			itinerarioTr.setNumAsientosEconomica((Integer) objects[23]);
+			itinerarioTr.setEstadoAvion((String) objects[24]);
+			itinerarioTr.setTipoAvion((String) objects[25]);
 			
-			itinerarioTr.setIdVuelo((Integer) objects[25]);
-			itinerarioTr.setNumeroVuelo((String) objects[26]);
+			itinerarioTr.setIdVuelo((Integer) objects[26]);
+			itinerarioTr.setNumeroVuelo((String) objects[27]);
 			
-			itinerarioTr.setValorTarifa((BigDecimal) objects[27]);
-			itinerarioTr.setImpuestoTasa((BigDecimal) objects[28]);
-			itinerarioTr.setTotalPagarTarifa((BigDecimal) objects[29]);
+			itinerarioTr.setValorTarifa((BigDecimal) objects[28]);
+			itinerarioTr.setImpuestoTasa((BigDecimal) objects[29]);
+			itinerarioTr.setTotalPagarTarifa((BigDecimal) objects[30]);
 			itinerariosCol.add(itinerarioTr);
 		}
 		return itinerariosCol;
